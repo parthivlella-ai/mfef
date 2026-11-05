@@ -1,0 +1,20 @@
+{
+  "name": "meditrack-monorepo",
+  "version": "1.0.0",
+  "description": "MediTrack – Smart Medicine Inventory and Expiry Management System",
+  "scripts": {
+    "server": "cd backend && npm run dev",
+    "client": "cd frontend && npm run dev",
+    "dev": "npm run start:dev",
+    "build": "cd frontend && npm run build",
+    "test": "cd backend && npm test",
+    "start:dev": "node -e \"const { spawn } = require('child_process'); const b = spawn('npm', ['run', 'dev'], { cwd: 'backend', shell: true, stdio: 'inherit' }); const f = spawn('npm', ['run', 'dev'], { cwd: 'frontend', shell: true, stdio: 'inherit' });\"",
+    "seed": "cd backend && npm run seed",
+    "seed:admin": "cd backend && npm run seed:admin",
+    "install:all": "cd backend && npm install && cd ../frontend && npm install"
+  },
+  "keywords": ["mern", "medicine-inventory", "expiry-tracker", "react", "node", "mongodb", "express"],
+  "author": "MediTrack Team",
+  "license": "MIT"
+}
+
