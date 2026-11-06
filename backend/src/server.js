@@ -58,6 +58,12 @@ const corsOptions = {
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
 };
 
+// Allow Chrome Private Network Access (PNA) for cross-port / localhost development
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Private-Network', 'true');
+  next();
+});
+
 app.use(cors(corsOptions));
 // Handle preflight OPTIONS requests across all routes
 app.options('*', cors(corsOptions));

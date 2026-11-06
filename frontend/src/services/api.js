@@ -1,30 +1,14 @@
 import axios from 'axios';
 
-// Resilient API base URL resolver for local development, Wi-Fi LAN access, and cloud production
+// Base URL configuration: uses relative '/api' locally for same-origin proxy, or external URL in production
 const getBaseUrl = () => {
   const envUrl = import.meta.env.VITE_API_URL;
-
-  // 1. If explicit absolute URL is configured in environment
+  // If explicitly configured with an absolute URL (e.g. in cloud deployment)
   if (envUrl && envUrl.startsWith('http')) {
     const clean = envUrl.trim().replace(/\/+$/, '');
     return clean.endsWith('/api') ? clean : `${clean}/api`;
   }
-
-  // 2. If running locally in browser (localhost, 127.0.0.1, or local Wi-Fi / LAN IP)
-  if (typeof window !== 'undefined' && window.location) {
-    const hostname = window.location.hostname;
-    const isLocal =
-      hostname === 'localhost' ||
-      hostname === '127.0.0.1' ||
-      /^(192\.168|10\.|172\.(1[6-9]|2\d|3[01]))\./.test(hostname);
-
-    if (isLocal) {
-      // Connect directly to backend port 5000 on the same host/IP (bypasses Vite proxy issues)
-      return `http://${hostname}:5000/api`;
-    }
-  }
-
-  // 3. Fallback relative /api for production reverse proxies
+  // Local development defaults to relative '/api' (proxied by Vite to port 5000 with zero CORS overhead)
   return '/api';
 };
 
@@ -52,16 +36,10 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response.data,
   (error) => {
-    let message =
+    const message =
       error.response?.data?.message ||
       error.message ||
       'An unexpected error occurred';
-
-    // Clarify generic browser "Network Error"
-    if (error.message === 'Network Error' || !error.response) {
-      message =
-        'Network Error: Unable to reach backend server. Please verify backend is running on port 5000 and MongoDB is active.';
-    }
 
     // If unauthorized or token expired
     if (error.response?.status === 401) {
