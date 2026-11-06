@@ -1,15 +1,31 @@
 import axios from 'axios';
 
-// Normalize API base URL for both development (Vite proxy) and production (Render)
+// Resilient API base URL resolver for local development, Wi-Fi LAN access, and cloud production
 const getBaseUrl = () => {
   const envUrl = import.meta.env.VITE_API_URL;
-  if (!envUrl) return '/api';
-  const cleanUrl = envUrl.trim().replace(/\/+$/, '');
-  if (cleanUrl.startsWith('/')) return cleanUrl; // relative path like '/api'
-  const withProtocol = cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')
-    ? cleanUrl
-    : `https://${cleanUrl}`;
-  return withProtocol.endsWith('/api') ? withProtocol : `${withProtocol}/api`;
+
+  // 1. If explicit absolute URL is configured in environment
+  if (envUrl && envUrl.startsWith('http')) {
+    const clean = envUrl.trim().replace(/\/+$/, '');
+    return clean.endsWith('/api') ? clean : `${clean}/api`;
+  }
+
+  // 2. If running locally in browser (localhost, 127.0.0.1, or local Wi-Fi / LAN IP)
+  if (typeof window !== 'undefined' && window.location) {
+    const hostname = window.location.hostname;
+    const isLocal =
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      /^(192\.168|10\.|172\.(1[6-9]|2\d|3[01]))\./.test(hostname);
+
+    if (isLocal) {
+      // Connect directly to backend port 5000 on the same host/IP (bypasses Vite proxy issues)
+      return `http://${hostname}:5000/api`;
+    }
+  }
+
+  // 3. Fallback relative /api for production reverse proxies
+  return '/api';
 };
 
 const api = axios.create({
@@ -17,6 +33,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 15000,
 });
 
 // Request interceptor to attach JWT token
