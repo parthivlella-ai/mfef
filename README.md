@@ -6,7 +6,7 @@
 [![MongoDB](https://img.shields.io/badge/Database-MongoDB%20Mongoose-47a248.svg)](https://www.mongodb.com/)
 [![Tailwind CSS](https://img.shields.io/badge/Styling-Tailwind%20v4-38bdf8.svg)](https://tailwindcss.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/parthivlella-ai/MFEF-project-)
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/parthivlella-ai/mfef)
 
 > **🚀 1-Click Cloud Deployment:** Click the **Deploy to Render** button above to automatically deploy the MediTrack Backend Web Service and Frontend Static Site to Render.
 
@@ -362,7 +362,7 @@ This repository includes a pre-configured `render.yaml` Blueprint specification.
 
 1. Push your repository to GitHub.
 2. In the [Render Dashboard](https://dashboard.render.com), click **New > Blueprint**.
-3. Select your `MFEF-project-` repository.
+3. Select your `mfef` repository.
 4. Render will detect `render.yaml` and configure both the Web Service (`meditrack-backend`) and Static Site (`meditrack-frontend`).
 5. Fill in the requested secret environment variables (`MONGO_URI`, `CLIENT_URL`, `ADMIN_PASSWORD`) and click **Apply**.
 
@@ -372,7 +372,7 @@ This repository includes a pre-configured `render.yaml` Blueprint specification.
 
 ##### Service 1: Backend API (Render Web Service)
 1. In Render Dashboard, click **New > Web Service**.
-2. Connect your GitHub repository: `parthivlella-ai/MFEF-project-`.
+2. Connect your GitHub repository: `parthivlella-ai/mfef`.
 3. Configure the settings:
    - **Name**: `meditrack-backend`
    - **Root Directory**: `backend`
@@ -395,7 +395,7 @@ This repository includes a pre-configured `render.yaml` Blueprint specification.
 
 ##### Service 2: Frontend Client (Render Static Site)
 1. In Render Dashboard, click **New > Static Site**.
-2. Connect your GitHub repository: `parthivlella-ai/MFEF-project-`.
+2. Connect your GitHub repository: `parthivlella-ai/mfef`.
 3. Configure the settings:
    - **Name**: `meditrack-frontend`
    - **Root Directory**: `frontend`
