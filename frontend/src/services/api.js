@@ -35,10 +35,16 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response.data,
   (error) => {
-    const message =
+    let message =
       error.response?.data?.message ||
       error.message ||
       'An unexpected error occurred';
+
+    // Clarify generic browser "Network Error"
+    if (error.message === 'Network Error' || !error.response) {
+      message =
+        'Network Error: Unable to reach backend server. Please verify backend is running on port 5000 and MongoDB is active.';
+    }
 
     // If unauthorized or token expired
     if (error.response?.status === 401) {

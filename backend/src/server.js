@@ -22,38 +22,45 @@ connectDB();
 const app = express();
 
 // Parse allowed CORS origins from CLIENT_URL (supports comma-separated list)
-const rawClientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
-const allowedOrigins = rawClientUrl
+const rawClientUrl = process.env.CLIENT_URL || '';
+const customOrigins = rawClientUrl
   .split(',')
   .map((url) => url.trim().replace(/\/+$/, ''))
   .filter(Boolean);
 
-// CORS Configuration for Render / Production / Local
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (e.g. mobile apps, curl, Postman, Render health checks)
-      if (!origin) return callback(null, true);
+// CORS Configuration for Local, Vercel, Render, and Mobile clients
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Allow non-browser requests with no origin (curl, mobile, Postman, health probes)
+    if (!origin) return callback(null, true);
 
-      const cleanOrigin = origin.replace(/\/+$/, '');
+    const cleanOrigin = origin.replace(/\/+$/, '');
 
-      // Allow if explicit match, wildcard match, onrender.com preview/production URL, or in development
-      if (
-        allowedOrigins.includes(cleanOrigin) ||
-        allowedOrigins.includes('*') ||
-        cleanOrigin.endsWith('.onrender.com') ||
-        process.env.NODE_ENV !== 'production'
-      ) {
-        return callback(null, true);
-      }
+    // Allow development, wildcard, local ports, Vercel, Render, or configured domains
+    const isAllowed =
+      process.env.NODE_ENV !== 'production' ||
+      customOrigins.includes('*') ||
+      customOrigins.includes(cleanOrigin) ||
+      cleanOrigin.endsWith('.onrender.com') ||
+      cleanOrigin.endsWith('.vercel.app') ||
+      cleanOrigin.endsWith('.netlify.app') ||
+      /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(cleanOrigin);
 
-      return callback(new Error(`CORS blocked: Origin ${origin} is not allowed`));
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  })
-);
+    if (isAllowed) {
+      return callback(null, true);
+    }
+
+    console.warn(`[CORS] Blocked request from unauthorized origin: ${origin}`);
+    return callback(null, false);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+};
+
+app.use(cors(corsOptions));
+// Handle preflight OPTIONS requests across all routes
+app.options('*', cors(corsOptions));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -75,7 +82,7 @@ app.get('/', (req, res) => {
   });
 });
 
-// System Health & Diagnostics endpoint (used by Render Health Check)
+// System Health & Diagnostics endpoint (used by Render Health Check & Dev Monitor)
 app.get('/api/health', (req, res) => {
   const dbStatus = getDbStatus();
   res.status(200).json({
@@ -100,18 +107,18 @@ app.use(notFound);
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
-const HOST = '0.0.0.0';
 
-const server = app.listen(PORT, HOST, () => {
+// Listen on all network interfaces (dual-stack IPv4/IPv6 support)
+const server = app.listen(PORT, () => {
   console.log(`====================================================`);
-  console.log(` MediTrack API Server running on http://${HOST}:${PORT}`);
+  console.log(` MediTrack API Server running on port ${PORT}`);
   console.log(` Mode: ${process.env.NODE_ENV || 'development'}`);
-  console.log(` Health check: http://${HOST}:${PORT}/api/health`);
-  console.log(` Allowed CORS: ${allowedOrigins.join(', ')}`);
+  console.log(` Health check: http://127.0.0.1:${PORT}/api/health`);
+  console.log(` Allowed Origins: Localhost, 127.0.0.1, Vercel, Render`);
   console.log(`====================================================`);
 });
 
-// Graceful shutdown handling for Render zero-downtime reboots
+// Graceful shutdown handling for container restarts
 const handleShutdown = (signal) => {
   console.log(`[Server] ${signal} signal received. Closing HTTP server gracefully...`);
   server.close(() => {
