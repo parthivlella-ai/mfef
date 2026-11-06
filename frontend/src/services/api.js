@@ -1,14 +1,38 @@
 import axios from 'axios';
 
-// Base URL configuration: uses relative '/api' locally for same-origin proxy, or external URL in production
+// Resilient Base URL resolver for Local Dev, Render Cloud, and Vercel Deployment
 const getBaseUrl = () => {
   const envUrl = import.meta.env.VITE_API_URL;
-  // If explicitly configured with an absolute URL (e.g. in cloud deployment)
-  if (envUrl && envUrl.startsWith('http')) {
-    const clean = envUrl.trim().replace(/\/+$/, '');
+
+  // 1. If explicitly configured with an environment variable (handles with/without protocol and trailing slashes)
+  if (envUrl && typeof envUrl === 'string' && envUrl.trim() !== '' && envUrl.trim() !== '/api') {
+    let clean = envUrl.trim().replace(/\/+$/, '');
+    if (!clean.startsWith('http://') && !clean.startsWith('https://')) {
+      clean = `https://${clean}`;
+    }
     return clean.endsWith('/api') ? clean : `${clean}/api`;
   }
-  // Local development defaults to relative '/api' (proxied by Vite to port 5000 with zero CORS overhead)
+
+  // 2. If running locally in development mode (Vite dev proxy)
+  if (import.meta.env.DEV) {
+    return '/api';
+  }
+
+  // 3. Dynamic cloud fallback: If running on a live browser deployment (e.g. Render or Vercel)
+  if (typeof window !== 'undefined' && window.location) {
+    const host = window.location.host;
+
+    // Render Cloud: If on *.onrender.com static site, route requests to the companion backend web service
+    if (host.includes('onrender.com')) {
+      // Replace frontend name with backend name in host (e.g., meditrack-frontend -> meditrack-backend)
+      const backendHost = host.replace(/frontend/i, 'backend');
+      return `https://${backendHost}/api`;
+    }
+
+    // Vercel / Same-origin unified deployments
+    return '/api';
+  }
+
   return '/api';
 };
 

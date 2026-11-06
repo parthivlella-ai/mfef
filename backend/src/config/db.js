@@ -1,10 +1,35 @@
 const mongoose = require('mongoose');
+const dns = require('dns');
+
+// Configure reliable DNS servers for SRV resolution (MongoDB Atlas)
+try {
+  dns.setServers(['8.8.8.8', '8.8.4.4', '1.1.1.1']);
+} catch (e) {
+  // Ignore in restricted environments
+}
+
+// Production cloud database fallback for instant Render/Vercel cloud deployments
+const CLOUD_ATLAS_URI = 'mongodb+srv://parthivlella_db_user:XZqqGYmGeqTfGUrF@cluster1.wxjdhbc.mongodb.net/meditrack?retryWrites=true&w=majority';
 
 let isConnected = false;
 
 const connectDB = async () => {
+  // If already connected, reuse existing connection (vital for serverless/containers)
+  if (mongoose.connection.readyState >= 1) {
+    isConnected = true;
+    return mongoose.connection;
+  }
+
   try {
-    const mongoUri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/meditrack';
+    let mongoUri = process.env.MONGO_URI ? process.env.MONGO_URI.trim() : '';
+
+    // If running in production and no URI is specified or localhost was mistakenly supplied in cloud
+    if (!mongoUri || (process.env.NODE_ENV === 'production' && (mongoUri.includes('127.0.0.1') || mongoUri.includes('localhost')))) {
+      mongoUri = process.env.NODE_ENV === 'production' ? CLOUD_ATLAS_URI : 'mongodb://127.0.0.1:27017/meditrack';
+    }
+
+    // Clean any accidental brackets like <password> in connection string
+    mongoUri = mongoUri.replace(/<([^>]+)>/g, '$1');
 
     mongoose.set('strictQuery', false);
 
@@ -24,11 +49,12 @@ const connectDB = async () => {
     });
 
     const conn = await mongoose.connect(mongoUri, {
-      serverSelectionTimeoutMS: 5000,
+      serverSelectionTimeoutMS: 8000,
     });
 
     isConnected = true;
     console.log(`[MongoDB] Connected successfully to database: ${conn.connection.host}:${conn.connection.port}/${conn.connection.name}`);
+    return conn;
   } catch (error) {
     isConnected = false;
     console.error(`[MongoDB Connection Error]: ${error.message}`);

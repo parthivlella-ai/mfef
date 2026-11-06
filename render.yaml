@@ -17,7 +17,7 @@ services:
       - key: PORT
         value: 5000
       - key: MONGO_URI
-        sync: false
+        value: mongodb+srv://parthivlella_db_user:XZqqGYmGeqTfGUrF@cluster1.wxjdhbc.mongodb.net/meditrack?retryWrites=true&w=majority
       - key: JWT_SECRET
         generateValue: true
       - key: CLIENT_URL
@@ -27,7 +27,7 @@ services:
       - key: ADMIN_EMAIL
         value: admin@meditrack.com
       - key: ADMIN_PASSWORD
-        sync: false
+        value: AdminSecure2026!
 
   # ===========================================================================
   # MediTrack Frontend Web App (React + Vite Static Site)

@@ -1,5 +1,10 @@
 const mongoose = require('mongoose');
+const dns = require('dns');
 const dotenv = require('dotenv');
+
+try {
+  dns.setServers(['8.8.8.8', '8.8.4.4', '1.1.1.1']);
+} catch (e) {}
 
 dotenv.config();
 
@@ -10,10 +15,11 @@ const mockStore = require('./utils/mockStore');
 
 const seedData = async () => {
   try {
-    const mongoUri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/meditrack';
+    let mongoUri = (process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/meditrack').trim();
+    mongoUri = mongoUri.replace(/<([^>]+)>/g, '$1');
 
     await mongoose.connect(mongoUri, {
-      serverSelectionTimeoutMS: 5000,
+      serverSelectionTimeoutMS: 8000,
     });
     console.log('[Seeder] Connected to MongoDB database successfully.');
 

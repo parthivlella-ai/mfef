@@ -17,6 +17,15 @@
     "seed:admin": "cd backend && npm run seed:admin",
     "install:all": "cd backend && npm install && cd ../frontend && npm install"
   },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.9.5",
+    "morgan": "^1.10.0"
+  },
   "keywords": [
     "mern",
     "medicine-inventory",
@@ -25,7 +34,8 @@
     "node",
     "mongodb",
     "express",
-    "render"
+    "render",
+    "vercel"
   ],
   "author": "MediTrack Team",
   "license": "MIT"
