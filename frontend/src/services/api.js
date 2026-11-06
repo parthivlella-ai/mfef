@@ -5,7 +5,11 @@ const getBaseUrl = () => {
   const envUrl = import.meta.env.VITE_API_URL;
   if (!envUrl) return '/api';
   const cleanUrl = envUrl.trim().replace(/\/+$/, '');
-  return cleanUrl.endsWith('/api') ? cleanUrl : `${cleanUrl}/api`;
+  if (cleanUrl.startsWith('/')) return cleanUrl; // relative path like '/api'
+  const withProtocol = cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')
+    ? cleanUrl
+    : `https://${cleanUrl}`;
+  return withProtocol.endsWith('/api') ? withProtocol : `${withProtocol}/api`;
 };
 
 const api = axios.create({

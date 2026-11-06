@@ -21,7 +21,7 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: CLIENT_URL
-        sync: false
+        value: https://meditrack-frontend.onrender.com
       - key: ADMIN_NAME
         value: MediTrack Administrator
       - key: ADMIN_EMAIL
@@ -46,5 +46,7 @@ services:
         destination: /index.html
     envVars:
       - key: VITE_API_URL
-        sync: false
-
+        fromService:
+          type: web
+          name: meditrack-backend
+          property: host

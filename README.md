@@ -6,6 +6,9 @@
 [![MongoDB](https://img.shields.io/badge/Database-MongoDB%20Mongoose-47a248.svg)](https://www.mongodb.com/)
 [![Tailwind CSS](https://img.shields.io/badge/Styling-Tailwind%20v4-38bdf8.svg)](https://tailwindcss.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/parthivlella-ai/MFEF-project-)
+
+> **🚀 1-Click Cloud Deployment:** Click the **Deploy to Render** button above to automatically deploy the MediTrack Backend Web Service and Frontend Static Site to Render.
 
 **MediTrack** is an enterprise-grade clinical pharmacy inventory and expiry surveillance system built on the MERN stack with complete authentication, role-based authorization, strict record ownership isolation, and live dynamic date calculations.
 
