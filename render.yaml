@@ -31,12 +31,11 @@ services:
 
   # ===========================================================================
   # MediTrack Frontend Web App (React + Vite Static Site)
+  # Note: Static sites are served via Render Global CDN and cannot have a region.
   # ===========================================================================
   - type: web
     name: meditrack-frontend
     runtime: static
-    plan: free
-    region: oregon
     rootDir: frontend
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
