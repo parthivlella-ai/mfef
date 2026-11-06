@@ -1,5 +1,13 @@
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
+const dns = require('dns');
+
+// Configure reliable DNS servers for MongoDB Atlas SRV lookup resilience
+try {
+  dns.setServers(['8.8.8.8', '8.8.4.4', '1.1.1.1']);
+} catch {
+  // Ignored if custom DNS servers cannot be set
+}
 
 dotenv.config();
 
@@ -10,8 +18,17 @@ const mockStore = require('./utils/mockStore');
 
 const seedData = async () => {
   try {
-    const mongoUri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/meditrack';
-    await mongoose.connect(mongoUri);
+    let mongoUri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/meditrack';
+
+    // Auto-sanitize accidental angle brackets around passwords: :<password>@ -> :password@
+    if (mongoUri.includes(':<') && mongoUri.includes('>@')) {
+      mongoUri = mongoUri.replace(/:<([^>]+)>@/, ':$1@');
+    }
+
+    await mongoose.connect(mongoUri, {
+      serverSelectionTimeoutMS: 10000,
+      connectTimeoutMS: 10000,
+    });
     console.log('[Seeder] Connected to MongoDB for seeding...');
 
     // Clear existing collections

@@ -1,10 +1,23 @@
 const mongoose = require('mongoose');
+const dns = require('dns');
+
+// Configure reliable DNS servers for MongoDB Atlas SRV lookup resilience
+try {
+  dns.setServers(['8.8.8.8', '8.8.4.4', '1.1.1.1']);
+} catch {
+  // Ignored if custom DNS servers cannot be set in sandbox
+}
 
 let isConnected = false;
 
 const connectDB = async () => {
   try {
-    const mongoUri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/meditrack';
+    let mongoUri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/meditrack';
+
+    // Auto-sanitize accidental angle brackets around passwords if pasted from Atlas snippets: :<password>@ -> :password@
+    if (mongoUri.includes(':<') && mongoUri.includes('>@')) {
+      mongoUri = mongoUri.replace(/:<([^>]+)>@/, ':$1@');
+    }
 
     mongoose.set('strictQuery', false);
 
