@@ -43,34 +43,56 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       const res = await authService.login({ email, password });
-      if (res.success && res.data) {
-        const { token: userToken, ...userData } = res.data;
-        setToken(userToken);
-        setUser(userData);
-        localStorage.setItem('meditrack_token', userToken);
-        localStorage.setItem('meditrack_user', JSON.stringify(userData));
-        return { success: true, user: userData };
-      }
-      throw new Error(res.message || 'Login failed');
-    } catch (error) {
-      return { success: false, error: error.message };
-    }
-  };
-
-  const signup = async (formData) => {
-    try {
-      const res = await authService.register(formData);
-      if (res.success && res.data) {
-        const { token: userToken, ...userObj } = res.data;
+      const payload = res.data || res;
+      const userToken = payload.token || res.token;
+      if (userToken) {
+        const userObj = {
+          _id: payload._id,
+          name: payload.name,
+          email: payload.email,
+          role: payload.role || 'user',
+          pharmacyName: payload.pharmacyName,
+          phone: payload.phone,
+          licenseNumber: payload.licenseNumber,
+        };
         setToken(userToken);
         setUser(userObj);
         localStorage.setItem('meditrack_token', userToken);
         localStorage.setItem('meditrack_user', JSON.stringify(userObj));
         return { success: true, user: userObj };
       }
-      throw new Error(res.message || 'Registration failed');
+      return { success: false, error: res.message || 'Login failed' };
     } catch (error) {
-      return { success: false, error: error.message };
+      return { success: false, error: error.message || 'Login failed' };
+    }
+  };
+
+  const signup = async (formData) => {
+    try {
+      const res = await authService.register(formData);
+      const payload = res.data || res;
+      const userToken = payload.token || res.token;
+      if (res.success || userToken) {
+        const userObj = {
+          _id: payload._id,
+          name: payload.name,
+          email: payload.email,
+          role: payload.role || 'user',
+          pharmacyName: payload.pharmacyName,
+          phone: payload.phone,
+          licenseNumber: payload.licenseNumber,
+        };
+        if (userToken) {
+          setToken(userToken);
+          localStorage.setItem('meditrack_token', userToken);
+        }
+        setUser(userObj);
+        localStorage.setItem('meditrack_user', JSON.stringify(userObj));
+        return { success: true, user: userObj };
+      }
+      return { success: false, error: res.message || 'Registration failed' };
+    } catch (error) {
+      return { success: false, error: error.message || 'Registration failed' };
     }
   };
 
