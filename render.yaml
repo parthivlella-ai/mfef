@@ -1,0 +1,49 @@
+services:
+  # ===========================================================================
+  # MediTrack Backend API Service (Node.js + Express)
+  # ===========================================================================
+  - type: web
+    name: meditrack-backend
+    runtime: node
+    plan: free
+    region: oregon
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CLIENT_URL
+        sync: false
+      - key: ADMIN_NAME
+        value: MediTrack Administrator
+      - key: ADMIN_EMAIL
+        value: admin@meditrack.com
+      - key: ADMIN_PASSWORD
+        sync: false
+
+  # ===========================================================================
+  # MediTrack Frontend Web App (React + Vite Static Site)
+  # ===========================================================================
+  - type: web
+    name: meditrack-frontend
+    runtime: static
+    plan: free
+    region: oregon
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        sync: false

@@ -304,3 +304,138 @@ All listed features were actively executed and verified against live MongoDB. Ze
 - [x] **Platform Activity Charts**: SVG Category Distribution, Expiry Surveillance, and User Growth Trend line charts.
 - [x] **Admin Password Privacy**: Passwords strictly excluded from all admin responses (`select('-password')`).
 - [x] **System Diagnostics**: Server uptime, Node environment version, memory usage, and live MongoDB status.
+
+---
+
+## 🚀 Cloud Deployment Guide: Render & MongoDB Atlas
+
+MediTrack is configured and ready for production deployment across **Render** and **MongoDB Atlas**.
+
+### 1. Cloud Architecture Overview
+
+```
+┌──────────────────────────────────────┐       ┌─────────────────────────────────────┐
+│       Frontend (Render Static)       │       │       Backend (Render Web Service)  │
+│  React 19 + Vite SPA                 │ ----> │  Node.js + Express API              │
+│  https://meditrack-client.onrender.com│       │  https://meditrack-api.onrender.com │
+└──────────────────────────────────────┘       └──────────────────┬──────────────────┘
+                                                                  │
+                                                                  ▼
+                                                      ┌───────────────────────┐
+                                                      │  MongoDB Atlas Cloud  │
+                                                      │  Cluster M0 / M10+    │
+                                                      └───────────────────────┘
+```
+
+---
+
+### 2. MongoDB Atlas Setup (Database)
+
+1. **Log in / Sign up**: Visit [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) and create a free or dedicated cluster (e.g., `Cluster0`).
+2. **Create Database User**:
+   - Go to **Security > Database Access > Add New Database User**.
+   - Select **Password Authentication**.
+   - Set Username (e.g., `meditrack_admin`) and a secure password.
+   - Set Built-in Role to **Read and write to any database**.
+3. **Configure Network Access (Crucial for Render)**:
+   - Go to **Security > Network Access > Add IP Address**.
+   - Choose **Allow Access from Anywhere (`0.0.0.0/0`)** because Render uses dynamic IP addresses.
+   - Click **Confirm**.
+4. **Obtain Connection String**:
+   - Go to **Database > Deployment > Clusters > Connect**.
+   - Select **Drivers (Node.js)**.
+   - Copy the SRV connection URI:
+     ```
+     mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/meditrack?retryWrites=true&w=majority
+     ```
+   - Replace `<username>` and `<password>` with your database user credentials.
+
+---
+
+### 3. Deploying on Render (Two Options)
+
+#### Option A: 1-Click Render Blueprint (Recommended)
+This repository includes a pre-configured `render.yaml` Blueprint specification.
+
+1. Push your repository to GitHub.
+2. In the [Render Dashboard](https://dashboard.render.com), click **New > Blueprint**.
+3. Select your `MFEF-project-` repository.
+4. Render will detect `render.yaml` and configure both the Web Service (`meditrack-backend`) and Static Site (`meditrack-frontend`).
+5. Fill in the requested secret environment variables (`MONGO_URI`, `CLIENT_URL`, `ADMIN_PASSWORD`) and click **Apply**.
+
+---
+
+#### Option B: Manual Service Creation
+
+##### Service 1: Backend API (Render Web Service)
+1. In Render Dashboard, click **New > Web Service**.
+2. Connect your GitHub repository: `parthivlella-ai/MFEF-project-`.
+3. Configure the settings:
+   - **Name**: `meditrack-backend`
+   - **Root Directory**: `backend`
+   - **Runtime**: `Node`
+   - **Build Command**: `npm install`
+   - **Start Command**: `npm start`
+   - **Health Check Path**: `/api/health`
+4. Add **Environment Variables** in the Environment tab:
+   | Key | Value | Description |
+   | :--- | :--- | :--- |
+   | `NODE_ENV` | `production` | Enables production optimizations & hides stack traces |
+   | `PORT` | `5000` | Render internal port (bound to `0.0.0.0`) |
+   | `MONGO_URI` | `mongodb+srv://<user>:<pwd>@cluster0.xxx.mongodb.net/meditrack?retryWrites=true&w=majority` | Your MongoDB Atlas connection URI |
+   | `JWT_SECRET` | *(64+ character random secret string)* | Used to sign & verify JWT session tokens |
+   | `CLIENT_URL` | `https://meditrack-frontend.onrender.com` | Deployed Frontend URL (accepts comma-separated URLs) |
+   | `ADMIN_NAME` | `MediTrack Administrator` | Initial admin account name |
+   | `ADMIN_EMAIL` | `admin@meditrack.com` | Initial admin email address |
+   | `ADMIN_PASSWORD` | `YourAdminSecurePassword2026!` | Initial admin password |
+5. Click **Create Web Service**. Wait for the build and health check to pass (`status: online`). Note your backend URL (e.g., `https://meditrack-backend.onrender.com`).
+
+##### Service 2: Frontend Client (Render Static Site)
+1. In Render Dashboard, click **New > Static Site**.
+2. Connect your GitHub repository: `parthivlella-ai/MFEF-project-`.
+3. Configure the settings:
+   - **Name**: `meditrack-frontend`
+   - **Root Directory**: `frontend`
+   - **Build Command**: `npm install && npm run build`
+   - **Publish Directory**: `dist`
+4. Add **Environment Variables**:
+   | Key | Value | Description |
+   | :--- | :--- | :--- |
+   | `VITE_API_URL` | `https://meditrack-backend.onrender.com/api` | Your deployed Render backend API URL |
+5. Add **Redirects / Rewrites** (or rely on `frontend/public/_redirects` included in the repo):
+   - **Type**: `Rewrite`
+   - **Source**: `/*`
+   - **Destination**: `/index.html`
+6. Click **Create Static Site**.
+7. Once deployed, copy your frontend URL (e.g. `https://meditrack-frontend.onrender.com`) and update `CLIENT_URL` on the backend Web Service if needed.
+
+---
+
+### 4. Initializing the Administrator on Production
+
+Once your backend Web Service is running and connected to MongoDB Atlas, run the secure admin provision script:
+
+1. In the Render Dashboard, open `meditrack-backend`.
+2. Go to the **Shell** tab.
+3. Run:
+   ```bash
+   npm run seed:admin
+   ```
+4. Output will confirm:
+   ```
+   [Admin Seeder] Connected to MongoDB...
+   [Admin Seeder] New secure admin account (admin@meditrack.com) created successfully.
+   [Admin Seeder] Done. Secure admin initialization complete.
+   ```
+5. You can now log into `/login` on your deployed frontend using your configured admin credentials!
+
+---
+
+### 5. Deployment Checklist & Verification
+
+- [x] **Express `0.0.0.0` Binding**: Backend server explicitly listens on `0.0.0.0:${PORT}` for container compatibility.
+- [x] **Dynamic CORS Origin Parsing**: Backend allows single or comma-separated `CLIENT_URL` entries, plus auto-allows all `*.onrender.com` preview URLs.
+- [x] **Normalized API Base URL**: Frontend `api.js` automatically trims and appends `/api` to prevent missing-path errors.
+- [x] **SPA Route Rewrites**: `_redirects` file in `frontend/public/` prevents 404 errors on direct browser refreshes.
+- [x] **Graceful Shutdown**: Server handles `SIGTERM` and `SIGINT` signals for zero-downtime rolling deploys.
+- [x] **Secure Secrets**: Zero credentials committed to git; all configurations handled via environment variables.

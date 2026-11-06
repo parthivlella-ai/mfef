@@ -248,16 +248,15 @@ const runTests = async () => {
     },
     {
       name: 'User Private Penicillin 250mg',
-      genericName: 'Penicillin V Potassium',
       category: 'Antibiotics',
+      brand: 'Pfizer',
       batchNumber: userBatchNum,
       quantity: 50,
-      minStockLevel: 10,
-      unit: 'Tablets',
-      unitPrice: 19.99,
-      purchasePrice: 12.0,
+      unit: 'tablets',
+      purchaseDate: new Date().toISOString(),
       expiryDate: new Date(Date.now() + 180 * 86400000).toISOString(),
-      supplier: 'Test Pharma Co.',
+      price: 19.99,
+      description: 'Test Penicillin for auth isolation test',
     }
   );
   console.log(`   Created Medicine: status=${createMedRes.status}, id=${createMedRes.data.data?._id}`);
@@ -349,7 +348,13 @@ const runTests = async () => {
   process.exit(0);
 };
 
-// Start server locally for testing if not already running
-const app = require('./src/server');
-setTimeout(runTests, 1500);
+// Check if server is already running, otherwise start it
+const checkReq = http.get('http://127.0.0.1:5000/api/health', (res) => {
+  runTests();
+});
+
+checkReq.on('error', () => {
+  require('./src/server');
+  setTimeout(runTests, 1500);
+});
 

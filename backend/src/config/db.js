@@ -5,20 +5,45 @@ let isConnected = false;
 const connectDB = async () => {
   try {
     const mongoUri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/meditrack';
-    
+
     mongoose.set('strictQuery', false);
 
+    // Set up MongoDB connection lifecycle event listeners
+    mongoose.connection.on('disconnected', () => {
+      isConnected = false;
+      console.warn('[MongoDB] Database connection disconnected.');
+    });
+
+    mongoose.connection.on('reconnected', () => {
+      isConnected = true;
+      console.log('[MongoDB] Database connection reconnected successfully.');
+    });
+
+    mongoose.connection.on('error', (err) => {
+      console.error(`[MongoDB Runtime Error]: ${err.message}`);
+    });
+
+    // Connect with Atlas-recommended connection options
     const conn = await mongoose.connect(mongoUri, {
-      serverSelectionTimeoutMS: 5000,
+      serverSelectionTimeoutMS: 10000, // 10s timeout for cloud handshake
+      connectTimeoutMS: 10000,
+      socketTimeoutMS: 45000,
     });
 
     isConnected = true;
-    console.log(`[MongoDB] Connected successfully: ${conn.connection.host}/${conn.connection.name}`);
+    console.log(`[MongoDB Atlas] Connected successfully: ${conn.connection.host}/${conn.connection.name}`);
   } catch (error) {
     isConnected = false;
-    console.error(`[MongoDB] Connection Notice: ${error.message}`);
-    console.warn(`[MongoDB] Tip: Ensure MongoDB service is running or provide a cloud MONGO_URI in backend/.env`);
-    console.warn(`[MongoDB] In-memory fallback mode is enabled so all features remain functional for preview & testing.`);
+    console.error(`[MongoDB Connection Notice]: ${error.message}`);
+    if (process.env.NODE_ENV === 'production') {
+      console.error(`[MongoDB Atlas Deployment Alert]:`);
+      console.error(`  - Could not establish connection to MongoDB Atlas.`);
+      console.error(`  - Ensure MONGO_URI in Render dashboard is set with correct username and password.`);
+      console.error(`  - Ensure MongoDB Atlas > Network Access has '0.0.0.0/0' whitelisted.`);
+    } else {
+      console.warn(`[MongoDB] Tip: Ensure MongoDB service is running or provide a cloud MONGO_URI in .env`);
+      console.warn(`[MongoDB] In-memory fallback mode is enabled so all features remain functional for preview & testing.`);
+    }
   }
 };
 
@@ -30,4 +55,3 @@ const getDbStatus = () => ({
 });
 
 module.exports = { connectDB, getDbStatus };
-

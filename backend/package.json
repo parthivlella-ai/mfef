@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "MediTrack - Smart Medicine Inventory and Expiry Management System Backend API",
   "main": "src/server.js",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
@@ -13,7 +16,15 @@
     "test:medicine": "node test-medicine-system.js",
     "test:dashboards": "node test-dashboards-and-notifications.js"
   },
-  "keywords": ["medicine", "inventory", "expiry-tracking", "express", "mongodb", "mern"],
+  "keywords": [
+    "medicine",
+    "inventory",
+    "expiry-tracking",
+    "express",
+    "mongodb",
+    "mern",
+    "render"
+  ],
   "author": "MediTrack Team",
   "license": "MIT",
   "dependencies": {
@@ -29,4 +40,3 @@
     "nodemon": "^3.1.9"
   }
 }
-
