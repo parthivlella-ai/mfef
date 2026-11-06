@@ -1,13 +1,5 @@
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
-const dns = require('dns');
-
-// Configure reliable DNS servers for MongoDB Atlas SRV lookup resilience
-try {
-  dns.setServers(['8.8.8.8', '8.8.4.4', '1.1.1.1']);
-} catch {
-  // Ignored if custom DNS servers cannot be set
-}
 
 dotenv.config();
 
@@ -15,18 +7,12 @@ const User = require('./models/User');
 
 const seedAdmin = async () => {
   try {
-    let mongoUri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/meditrack';
-
-    // Auto-sanitize accidental angle brackets around passwords: :<password>@ -> :password@
-    if (mongoUri.includes(':<') && mongoUri.includes('>@')) {
-      mongoUri = mongoUri.replace(/:<([^>]+)>@/, ':$1@');
-    }
+    const mongoUri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/meditrack';
 
     await mongoose.connect(mongoUri, {
-      serverSelectionTimeoutMS: 10000,
-      connectTimeoutMS: 10000,
+      serverSelectionTimeoutMS: 5000,
     });
-    console.log('[Admin Seeder] Connected to MongoDB Atlas...');
+    console.log('[Admin Seeder] Connected to MongoDB database successfully.');
 
     const adminName = process.env.ADMIN_NAME || 'MediTrack Administrator';
     const adminEmail = (process.env.ADMIN_EMAIL || 'admin@meditrack.com').toLowerCase().trim();
@@ -41,14 +27,12 @@ const seedAdmin = async () => {
 
     if (existingAdmin) {
       existingAdmin.name = adminName;
-      // Pre-save hook on User schema will hash this automatically
-      existingAdmin.password = adminPassword;
+      existingAdmin.password = adminPassword; // Pre-save hook hashes this
       existingAdmin.role = 'admin';
       existingAdmin.status = 'active';
       await existingAdmin.save();
       console.log(`[Admin Seeder] Existing admin account (${adminEmail}) updated successfully with role "admin".`);
     } else {
-      // Pre-save hook on User schema will hash this automatically
       await User.create({
         name: adminName,
         email: adminEmail,
