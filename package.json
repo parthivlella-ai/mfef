@@ -6,8 +6,8 @@
     "node": ">=18.0.0"
   },
   "scripts": {
-    "start": "cd backend && npm start",
-    "build": "cd frontend && npm run build",
+    "start": "node backend/src/server.js",
+    "build": "cd frontend && npm install && npm run build",
     "server": "cd backend && npm run dev",
     "client": "cd frontend && npm run dev",
     "dev": "npm run start:dev",

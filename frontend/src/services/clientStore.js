@@ -876,3 +876,4 @@ export const clientStore = {
     setStored(LOGS_KEY, logs);
   },
 };
+
