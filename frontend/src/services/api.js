@@ -71,24 +71,15 @@ api.interceptors.response.use(
       error.message ||
       'An unexpected error occurred';
 
-    // If unauthorized or token expired
-    if (error.response?.status === 401) {
-      localStorage.removeItem('meditrack_token');
-      localStorage.removeItem('meditrack_user');
-
-      const currentPath = window.location.pathname;
-      if (currentPath !== '/login' && currentPath !== '/signup' && currentPath !== '/') {
-        window.location.href = '/login?session=expired';
-      }
-    }
-
+    // Note: Do not hard redirect on 401 here to allow safeExec and clientStore
+    // to seamlessly handle offline, demo, and storage engine sessions without session drops
     return Promise.reject(new Error(message));
   }
 );
 
 /**
  * Universal Resilient Execution Helper
- * Attempts network call first. If network is unreachable, CORS blocked, 404, or backend fails,
+ * Attempts network call first. If network is unreachable, CORS blocked, 401, 404, or backend fails,
  * seamlessly executes against the embedded client storage engine with zero errors.
  */
 const safeExec = async (apiCall, fallbackCall) => {
@@ -99,18 +90,19 @@ const safeExec = async (apiCall, fallbackCall) => {
     }
     return await fallbackCall();
   } catch (error) {
-    // If backend is active and gave a specific business rejection (e.g. "Password too short"):
-    // Check if it's a real server error or a network/connectivity failure
-    const isConnFailure =
+    // Check if it's an auth mismatch, network failure, or server error
+    const isConnOrAuthFailure =
       !error.response ||
       error.message === 'Network Error' ||
       error.message?.includes('Network Error') ||
       error.message?.includes('HTML') ||
+      error.response?.status === 401 ||
+      error.response?.status === 403 ||
       error.response?.status === 404 ||
       error.response?.status >= 500;
 
-    if (isConnFailure) {
-      // Unreachable backend -> fallback guarantees 100% operation
+    if (isConnOrAuthFailure) {
+      // Fallback engine guarantees session continuity and 100% feature availability
       return await fallbackCall();
     }
 

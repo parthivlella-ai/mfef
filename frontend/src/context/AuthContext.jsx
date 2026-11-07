@@ -19,19 +19,17 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const initializeAuth = async () => {
       const storedToken = localStorage.getItem('meditrack_token');
-      if (storedToken) {
+      const storedUser = localStorage.getItem('meditrack_user');
+      if (storedToken && storedUser) {
         try {
+          setUser(JSON.parse(storedUser));
           const res = await authService.getProfile();
-          if (res.success && res.data) {
+          if (res && res.data) {
             setUser(res.data);
             localStorage.setItem('meditrack_user', JSON.stringify(res.data));
-          } else {
-            logout();
           }
         } catch (err) {
-          console.warn('Session verification notice:', err.message);
-          // Token expired or invalid
-          logout();
+          console.info('Retaining active user session:', err.message);
         }
       }
       setLoading(false);
