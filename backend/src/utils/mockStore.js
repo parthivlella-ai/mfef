@@ -1,5 +1,17 @@
-// In-memory persistent fallback store if MongoDB is not reachable locally
+// File-backed persistent fallback store if MongoDB is not reachable
 const bcrypt = require('bcryptjs');
+const fs = require('fs');
+const path = require('path');
+
+const DB_FILE = path.join(__dirname, '../../data/database.json');
+
+// Ensure data directory exists
+try {
+  const dir = path.dirname(DB_FILE);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+} catch (e) {}
 
 let mockUsers = [
   {
@@ -426,6 +438,39 @@ let mockActivityLogs = [
   },
 ];
 
+const saveToFile = () => {
+  try {
+    const payload = {
+      users: mockUsers,
+      medicines: mockMedicines,
+      activityLogs: mockActivityLogs,
+      lastSaved: new Date().toISOString(),
+    };
+    fs.writeFileSync(DB_FILE, JSON.stringify(payload, null, 2), 'utf8');
+  } catch (err) {
+    // Graceful fallback if file system is read-only (e.g. serverless containers)
+  }
+};
+
+const loadFromFile = () => {
+  try {
+    if (fs.existsSync(DB_FILE)) {
+      const raw = fs.readFileSync(DB_FILE, 'utf8');
+      const parsed = JSON.parse(raw);
+      if (parsed.users && Array.isArray(parsed.users)) mockUsers = parsed.users;
+      if (parsed.medicines && Array.isArray(parsed.medicines)) mockMedicines = parsed.medicines;
+      if (parsed.activityLogs && Array.isArray(parsed.activityLogs)) mockActivityLogs = parsed.activityLogs;
+    } else {
+      saveToFile();
+    }
+  } catch (err) {
+    // Use in-memory seed defaults
+  }
+};
+
+// Initialize file storage
+loadFromFile();
+
 const mockStore = {
   getUsers: () => mockUsers,
   getUserById: (id) => mockUsers.find((u) => u._id === id || String(u._id) === String(id)),
@@ -438,18 +483,21 @@ const mockStore = {
       updatedAt: new Date(),
     };
     mockUsers.push(newUser);
+    saveToFile();
     return newUser;
   },
   updateUser: (id, updates) => {
     const idx = mockUsers.findIndex((u) => u._id === id || String(u._id) === String(id));
     if (idx !== -1) {
       mockUsers[idx] = { ...mockUsers[idx], ...updates, updatedAt: new Date() };
+      saveToFile();
       return mockUsers[idx];
     }
     return null;
   },
   deleteUser: (id) => {
     mockUsers = mockUsers.filter((u) => u._id !== id && String(u._id) !== String(id));
+    saveToFile();
   },
 
   getMedicines: () => {
@@ -494,18 +542,21 @@ const mockStore = {
       updatedAt: new Date(),
     };
     mockMedicines.unshift(newMed);
+    saveToFile();
     return newMed;
   },
   updateMedicine: (id, updates) => {
     const idx = mockMedicines.findIndex((m) => m._id === id || String(m._id) === String(id));
     if (idx !== -1) {
       mockMedicines[idx] = { ...mockMedicines[idx], ...updates, updatedAt: new Date() };
+      saveToFile();
       return mockMedicines[idx];
     }
     return null;
   },
   deleteMedicine: (id) => {
     mockMedicines = mockMedicines.filter((m) => m._id !== id && String(m._id) !== String(id));
+    saveToFile();
   },
 
   getActivityLogs: () => mockActivityLogs,
@@ -516,6 +567,7 @@ const mockStore = {
       createdAt: new Date(),
     };
     mockActivityLogs.unshift(newLog);
+    saveToFile();
     return newLog;
   },
 };
