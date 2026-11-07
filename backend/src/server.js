@@ -77,19 +77,6 @@ if (process.env.NODE_ENV !== 'test') {
   app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 }
 
-// Root endpoint for platform health and verification
-app.get('/', (req, res) => {
-  res.json({
-    success: true,
-    appName: 'MediTrack API',
-    description: 'Smart Medicine Inventory and Expiry Management System API',
-    version: '1.0.0',
-    environment: process.env.NODE_ENV || 'development',
-    healthCheck: '/api/health',
-    timestamp: new Date().toISOString(),
-  });
-});
-
 // System Health & Diagnostics endpoint (used by Render Health Check & Dev Monitor)
 app.get('/api/health', (req, res) => {
   const dbStatus = getDbStatus();
@@ -103,6 +90,19 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// API Info endpoint
+app.get('/api/info', (req, res) => {
+  res.json({
+    success: true,
+    appName: 'MediTrack API',
+    description: 'Smart Medicine Inventory and Expiry Management System API',
+    version: '1.0.0',
+    environment: process.env.NODE_ENV || 'development',
+    healthCheck: '/api/health',
+    timestamp: new Date().toISOString(),
+  });
+});
+
 // Mount API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/medicines', medicineRoutes);
@@ -110,15 +110,27 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/notifications', notificationRoutes);
 
-// Serve Frontend Static Production Build (for single-URL fullstack deployments on Render)
+// Serve Frontend Static Production Build (serves React frontend at root '/')
 const frontendDist = path.join(__dirname, '../../frontend/dist');
 if (fs.existsSync(frontendDist)) {
   app.use(express.static(frontendDist));
+  // Client-side SPA routing: all non-API paths serve index.html
   app.get('*', (req, res, next) => {
     if (req.path.startsWith('/api')) {
       return next();
     }
     res.sendFile(path.join(frontendDist, 'index.html'));
+  });
+} else {
+  // Fallback root endpoint if frontend has not been compiled
+  app.get('/', (req, res) => {
+    res.json({
+      success: true,
+      appName: 'MediTrack API',
+      message: 'MediTrack API is active. Frontend build not detected.',
+      healthCheck: '/api/health',
+      timestamp: new Date().toISOString(),
+    });
   });
 }
 
